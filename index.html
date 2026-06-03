@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DiHAflow — Garden of Flow States</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --blue:#A8D4FF;
+  --blue-dim:rgba(168,212,255,0.25);
+  --white:#ffffff;
+  --black:#000000;
+  --font-vt:'VT323',monospace;
+  --font-mono:'Space Mono',monospace;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:var(--white);font-family:var(--font-mono);}
+
+/* BG VIDEO */
+#bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0.6;}
+#sea-audio{display:none;}
+
+/* ── SPLASH SCREEN ── */
+#splash{
+  position:fixed;inset:0;z-index:200;
+  background:var(--black);
+  display:flex;justify-content:center;align-items:center;
+  transition:opacity 1s ease;
+}
+#splash.fade-out{opacity:0;pointer-events:none;}
+#splash img{width:min(260px,60vw);object-fit:contain;}
+
+/* ── AUTH OVERLAY ── */
+#auth-overlay{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1.6rem;
+  background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:opacity 0.8s ease;
+}
+#auth-overlay.visible{opacity:1;pointer-events:all;}
+#auth-overlay.hidden{opacity:0;pointer-events:none;}
+
+.auth-logo{
+  width:120px;height:120px;border-radius:50%;
+  border:2px solid rgba(255,255,255,0.2);
+  background:var(--black);overflow:hidden;position:relative;flex-shrink:0;
+}
+.auth-logo img{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:100%;object-fit:cover;}
+
+/* TABS */
+.auth-tabs{display:flex;gap:0;border:1px solid rgba(255,255,255,0.15);border-radius:30px;overflow:hidden;}
+.auth-tab{
+  padding:0.45rem 1.4rem;font-family:var(--font-vt);font-size:1.1rem;
+  letter-spacing:0.15em;cursor:pointer;background:transparent;
+  color:rgba(255,255,255,0.4);border:none;transition:all 0.2s;
+}
+.auth-tab.active{background:var(--blue-dim);color:var(--white);border-color:var(--blue);}
+
+.auth-form{display:flex;flex-direction:column;align-items:stretch;gap:0.8rem;width:min(300px,84vw);}
+.auth-form input{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);
+  border-radius:6px;padding:0.7rem 1rem;color:var(--white);
+  font-family:var(--font-mono);font-size:0.82rem;outline:none;transition:border-color 0.2s;
+}
+.auth-form input:focus{border-color:var(--blue);}
+.auth-form input::placeholder{opacity:0.4;}
+
+/* Remember me */
+.remember-row{display:flex;align-items:center;gap:0.6rem;font-size:0.72rem;opacity:0.6;cursor:pointer;}
+.remember-row input[type=checkbox]{accent-color:var(--blue);width:14px;height:14px;cursor:pointer;}
+
+.flow-btn{
+  margin-top:0.2rem;padding:0.6rem 1.8rem;width:fit-content;align-self:center;
+  background:var(--blue-dim);border:1.5px solid var(--blue);border-radius:30px;
+  color:var(--white);font-family:var(--font-vt);font-size:1.3rem;
+  letter-spacing:0.18em;cursor:pointer;transition:background 0.3s;
+}
+.flow-btn:hover{background:rgba(168,212,255,0.4);}
+.flow-btn:disabled{opacity:0.4;cursor:default;}
+
+.auth-msg{font-size:0.72rem;text-align:center;min-height:1.1em;letter-spacing:0.08em;}
+.auth-msg.error{color:#ff6b6b;}
+.auth-msg.success{color:#6bffb8;}
+
+/* ── MAIN ── */
+#main{
+  position:relative;z-index:1;width:100%;height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;transition:opacity 0.8s ease;gap:1rem;
+}
+#main.visible{opacity:1;}
+
+.site-header{text-align:center;}
+.site-header h1{font-family:var(--font-vt);font-size:clamp(2.6rem,8vw,4rem);letter-spacing:0.04em;}
+.site-header h1 span{color:var(--blue);}
+.site-header p{font-size:clamp(0.6rem,2vw,0.8rem);letter-spacing:0.2em;text-transform:uppercase;opacity:0.5;margin-top:0.3rem;}
+
+/* USER BADGE */
+.user-badge{
+  position:fixed;top:1rem;right:1rem;z-index:10;
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.65rem;letter-spacing:0.1em;opacity:0.5;
+  cursor:pointer;transition:opacity 0.2s;
+}
+.user-badge:hover{opacity:1;}
+.user-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);}
+
+/* HOOP */
+.hoop-stage{
+  position:relative;display:flex;justify-content:center;align-items:center;
+  width:clamp(260px,65vw,340px);height:clamp(260px,65vw,340px);
+}
+#freq-canvas{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;}
+.hoop-player{
+  position:relative;z-index:1;
+  width:clamp(240px,60vw,320px);height:clamp(240px,60vw,320px);
+  border:12px solid var(--white);border-radius:50%;
+  display:flex;justify-content:center;align-items:center;
+  transition:border-color 0.1s,box-shadow 0.1s;
+}
+.inner{
+  width:clamp(145px,36vw,195px);height:clamp(145px,36vw,195px);
+  border-radius:50%;border:2px solid rgba(255,255,255,0.15);
+  display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.3);
+}
+.play-btn{
+  width:75px;height:75px;border-radius:50%;
+  background:rgba(0,0,0,0.55);border:2px solid rgba(255,255,255,0.3);
+  display:flex;justify-content:center;align-items:center;
+  cursor:pointer;font-size:1.5rem;color:var(--white);user-select:none;transition:transform 0.15s;
+}
+.play-btn:active{transform:scale(0.93);}
+.rw,.ff{position:absolute;font-size:1.3rem;cursor:pointer;opacity:0.65;user-select:none;top:50%;transform:translateY(-50%);}
+.rw{left:-4px;}.ff{right:-4px;}
+
+.now-playing{font-family:var(--font-vt);font-size:0.95rem;letter-spacing:0.12em;opacity:0.5;text-align:center;min-height:1.2em;max-width:280px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.progress-wrap{width:clamp(240px,60vw,320px);}
+.progress-container{width:100%;height:3px;background:rgba(255,255,255,0.15);border-radius:2px;cursor:pointer;}
+.progress-bar{height:100%;width:0%;background:var(--blue);border-radius:2px;pointer-events:none;transition:width 0.1s linear;}
+.track-time{font-size:0.65rem;opacity:0.35;letter-spacing:0.1em;text-align:right;margin-top:0.4rem;}
+
+/* MENU DOT */
+.menu-dot{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);background:rgba(0,0,0,0.4);display:flex;justify-content:center;align-items:center;cursor:pointer;transition:border-color 0.2s;}
+.menu-dot:hover{border-color:var(--white);}
+.menu-dot-inner{width:8px;height:8px;border-radius:50%;background:var(--white);}
+
+/* MENU PANEL */
+.menu-backdrop{display:none;position:fixed;inset:0;z-index:49;}
+.menu-backdrop.open{display:block;}
+.menu-panel{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(0,0,0,0.95);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:1.2rem 1.4rem 2.5rem;transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.32,0.72,0,1);}
+.menu-panel.open{transform:translateY(0);}
+.menu-handle{width:36px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin:0 auto 1.2rem;}
+.menu-section-title{font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;opacity:0.25;text-align:center;margin-bottom:0.8rem;}
+.menu-item{display:flex;align-items:center;gap:0.9rem;padding:0.9rem 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:opacity 0.2s;}
+.menu-item:last-child{border-bottom:none;}
+.menu-item:hover{opacity:0.7;}
+.menu-item.dim{opacity:0.3;cursor:default;}.menu-item.dim:hover{opacity:0.3;}
+.menu-icon{width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);display:flex;justify-content:center;align-items:center;font-size:0.95rem;flex-shrink:0;}
+.menu-title-text{font-family:var(--font-vt);font-size:1.15rem;letter-spacing:0.06em;}
+.menu-sub-text{font-size:0.6rem;opacity:0.35;letter-spacing:0.1em;text-transform:uppercase;margin-top:0.1rem;}
+.menu-arrow{font-size:1rem;opacity:0.25;margin-left:auto;transition:transform 0.3s;}
+.submenu{max-height:0;overflow:hidden;transition:max-height 0.35s ease;padding-left:3rem;border-left:1px solid rgba(255,255,255,0.06);margin-left:0.8rem;}
+.submenu.open{max-height:180px;margin-bottom:0.4rem;}
+.submenu-item{font-size:0.75rem;letter-spacing:0.1em;padding:0.55rem 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;opacity:0.6;display:flex;align-items:center;gap:0.5rem;transition:opacity 0.2s;}
+.submenu-item:hover{opacity:1;}.submenu-item:last-child{border-bottom:none;}
+
+/* SPACE OVERLAY */
+.space-overlay{position:fixed;inset:0;z-index:80;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1rem;opacity:0;pointer-events:none;transition:opacity 0.8s ease;}
+.space-overlay.active{opacity:1;pointer-events:all;}
+.space-title{font-family:var(--font-vt);font-size:clamp(1.8rem,5vw,2.6rem);letter-spacing:0.08em;color:var(--white);position:absolute;top:2rem;left:50%;transform:translateX(-50%);white-space:nowrap;}
+#space-i{transition:color 0.1s,text-shadow 0.1s;}
+#freq-canvas-space{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;}
+.hoop-space{position:relative;z-index:1;}
+.space-progress{position:absolute;bottom:5.5rem;width:min(300px,70vw);}
+.space-track-name{position:absolute;bottom:3.8rem;font-family:var(--font-vt);font-size:0.95rem;letter-spacing:0.15em;opacity:0.4;text-align:center;}
+.space-close{position:absolute;top:1.6rem;right:1.4rem;background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:34px;height:34px;color:rgba(255,255,255,0.45);font-size:0.8rem;cursor:pointer;display:flex;justify-content:center;align-items:center;transition:all 0.2s;}
+.space-close:hover{border-color:var(--white);color:var(--white);}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.88);backdrop-filter:blur(12px);display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal-box{width:min(340px,88vw);background:#0d0d0d;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:1.6rem 1.4rem;position:relative;display:flex;flex-direction:column;gap:0.9rem;}
+.modal-close{position:absolute;top:0.9rem;right:0.9rem;background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,0.45);font-size:0.75rem;cursor:pointer;display:flex;justify-content:center;align-items:center;}
+.modal-title{font-family:var(--font-vt);font-size:1.3rem;letter-spacing:0.1em;}
+.modal-input{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:0.6rem 0.9rem;color:var(--white);font-family:var(--font-mono);font-size:0.8rem;outline:none;width:100%;}
+.modal-input:focus{border-color:var(--blue);}
+.modal-input::placeholder{opacity:0.3;}
+.modal-upload-label{display:flex;align-items:center;justify-content:center;padding:0.6rem;border:1px dashed rgba(255,255,255,0.2);border-radius:8px;font-size:0.75rem;letter-spacing:0.1em;cursor:pointer;opacity:0.6;text-transform:uppercase;transition:all 0.2s;}
+.modal-upload-label:hover{opacity:1;border-color:var(--blue);color:var(--blue);}
+.modal-tracklist{display:flex;flex-direction:column;gap:0.35rem;max-height:160px;overflow-y:auto;}
+.modal-track-item{display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.6rem;background:rgba(255,255,255,0.04);border-radius:6px;font-size:0.72rem;cursor:pointer;transition:background 0.2s;}
+.modal-track-item:hover{background:rgba(255,255,255,0.08);}
+.modal-save-btn{padding:0.6rem;background:var(--blue-dim);border:1.5px solid var(--blue);border-radius:30px;color:var(--white);font-family:var(--font-vt);font-size:1.05rem;letter-spacing:0.15em;cursor:pointer;}
+
+/* RESPONSIVE */
+@media(max-width:480px){
+  .site-header h1{font-size:2.2rem;}
+  .hoop-player{width:220px;height:220px;border-width:9px;}
+  .inner{width:132px;height:132px;}
+  .play-btn{width:64px;height:64px;font-size:1.2rem;}
+  .progress-wrap,.hoop-stage{width:220px;}
+}
+@media(min-width:769px){
+  .site-header h1{font-size:4rem;}
+  .hoop-player{width:340px;height:340px;}
+  .inner{width:210px;height:210px;}
+  .play-btn{width:88px;height:88px;font-size:1.7rem;}
+  .progress-wrap,.hoop-stage{width:340px;}
+}
+</style>
+</head>
+<body>
+
+<video autoplay muted loop playsinline id="bg-video">
+  <source src="https://res.cloudinary.com/dfegb8lq5/video/upload/v1780449340/sea-visual_rdbogv.mp4" type="video/mp4">
+</video>
+<audio id="sea-audio" loop>
+  <source src="ocean-waves-1.mp3" type="audio/mpeg">
+</audio>
+
+<!-- SPLASH -->
+<div id="splash">
+  <img src="flow-logo.png" alt="DiHAflow">
+</div>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay">
+  <div class="auth-logo">
+    <img src="flow-logo.png" alt="DiHAflow">
+  </div>
+
+  <div class="auth-tabs">
+    <button class="auth-tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+    <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+  </div>
+
+  <form class="auth-form" id="auth-form">
+    <input type="text" id="input-firstname" placeholder="First Name" style="display:none">
+    <input type="text" id="input-lastname" placeholder="Surname" style="display:none">
+    <input type="email" id="input-email" placeholder="Email Address" required>
+    <input type="password" id="input-password" placeholder="Password" required minlength="6">
+    <label class="remember-row">
+      <input type="checkbox" id="remember-me"> Stay logged in
+    </label>
+    <p class="auth-msg" id="auth-msg"></p>
+    <button type="submit" class="flow-btn" id="flow-btn">FLOW</button>
+  </form>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="user-badge" id="user-badge" onclick="signOut()">
+    <div class="user-badge-dot"></div>
+    <span id="user-name">—</span>
+    <span style="opacity:0.4">· sign out</span>
+  </div>
+
+  <header class="site-header">
+    <h1>D<span>i</span>HAflow</h1>
+    <p>Garden of Flow States</p>
+  </header>
+
+  <p class="now-playing" id="now-playing">— select a track —</p>
+
+  <div class="hoop-stage">
+    <canvas id="freq-canvas"></canvas>
+    <div class="hoop-player" id="hoop">
+      <div class="rw" id="rewind">&#9664;&#9664;</div>
+      <div class="inner">
+        <div class="play-btn" id="play-btn">&#9654;</div>
+      </div>
+      <div class="ff" id="forward">&#9654;&#9654;</div>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-container" id="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <p class="track-time" id="track-time">0:00 / 0:00</p>
+  </div>
+
+  <div class="menu-dot" id="menu-dot">
+    <div class="menu-dot-inner"></div>
+  </div>
+</div>
+
+<!-- SPACE OVERLAY -->
+<div class="space-overlay" id="space-overlay">
+  <h1 class="space-title">D<span id="space-i">i</span>HAflow</h1>
+  <canvas id="freq-canvas-space"></canvas>
+  <div class="hoop-player hoop-space" id="hoop-space">
+    <div class="rw" id="rewind-space">&#9664;&#9664;</div>
+    <div class="inner">
+      <div class="play-btn" id="play-btn-space">&#10074;&#10074;</div>
+    </div>
+    <div class="ff" id="forward-space">&#9654;&#9654;</div>
+  </div>
+  <div class="progress-wrap space-progress">
+    <div class="progress-container" id="progress-container-space">
+      <div class="progress-bar" id="progress-bar-space"></div>
+    </div>
+    <p class="track-time" id="track-time-space">0:00 / 0:00</p>
+  </div>
+  <p class="space-track-name" id="space-track-name">—</p>
+  <button class="space-close" id="space-close">✕</button>
+</div>
+
+<!-- MENU -->
+<div class="menu-backdrop" id="menu-backdrop"></div>
+<div class="menu-panel" id="menu-panel">
+  <div class="menu-handle"></div>
+  <p class="menu-section-title">The Garden</p>
+
+  <div class="menu-item" onclick="enterDeclutter()">
+    <div class="menu-icon" style="border-color:var(--blue);color:var(--blue);">●</div>
+    <div>
+      <p class="menu-title-text" style="color:var(--blue);">What's Blue</p>
+      <p class="menu-sub-text">DiHAdeclutter — coming soon</p>
+    </div>
+  </div>
+
+  <div class="menu-item" onclick="toggleSubmenu('adams')">
+    <div class="menu-icon">🍎</div>
+    <div>
+      <p class="menu-title-text">Adam's Apple</p>
+      <p class="menu-sub-text">Your music. Your space.</p>
+    </div>
+    <span class="menu-arrow" id="arrow-adams">›</span>
+  </div>
+  <div class="submenu" id="sub-adams">
+    <div class="submenu-item" onclick="document.getElementById('adams-upload').click()">○ Upload Track</div>
+    <div class="submenu-item" onclick="openCreatePlaylist('adams')">○ Create Playlist</div>
+    <div class="submenu-item" onclick="openHistory()">○ History</div>
+  </div>
+
+  <div class="menu-item" onclick="toggleSubmenu('eve')">
+    <div class="menu-icon">👁</div>
+    <div>
+      <p class="menu-title-text">Eye of Eve</p>
+      <p class="menu-sub-text">Space. Shared. Communal.</p>
+    </div>
+    <span class="menu-arrow" id="arrow-eve">›</span>
+  </div>
+  <div class="submenu" id="sub-eve">
+    <div class="submenu-item" onclick="openCreatePlaylist('eve')">○ Create Playlist</div>
+    <div class="submenu-item" onclick="openHistory()">○ History Playlist</div>
+  </div>
+
+  <div class="menu-item dim">
+    <div class="menu-icon">🌑</div>
+    <div>
+      <p class="menu-title-text">Cold In The Shadow</p>
+      <p class="menu-sub-text">— waiting —</p>
+    </div>
+  </div>
+
+  <div class="menu-item dim">
+    <div class="menu-icon">🌿</div>
+    <div>
+      <p class="menu-title-text">Blue-Grass</p>
+      <p class="menu-sub-text">The garden grows here</p>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYLIST MODAL -->
+<div class="modal-overlay" id="playlist-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('playlist-modal')">✕</button>
+    <p class="modal-title" id="playlist-modal-title">Create Playlist</p>
+    <input type="text" id="playlist-name-input" class="modal-input" placeholder="Playlist name...">
+    <div class="modal-upload-label" onclick="document.getElementById('playlist-upload').click()">+ Add Tracks</div>
+    <input type="file" id="playlist-upload" accept="audio/*" multiple style="display:none">
+    <div class="modal-tracklist" id="playlist-tracklist"></div>
+    <button class="modal-save-btn" onclick="savePlaylist()">Save Playlist</button>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('history-modal')">✕</button>
+    <p class="modal-title">History</p>
+    <div class="modal-tracklist" id="history-list"></div>
+  </div>
+</div>
+
+<input type="file" id="adams-upload" accept="audio/*" style="position:fixed;opacity:0;pointer-events:none;top:-100px">
+<audio id="player-audio" style="display:none"></audio>
+
+<script>
+/* ── SUPABASE ── */
+const { createClient } = supabase;
+const sb = createClient(
+  'https://fwwyqwlllsssufoawkgv.supabase.co',
+  'sb_publishable_6Mo7cehMenTLFvK8i7_n1w_0l5fpK49'
+);
+
+/* ── SPLASH → AUTH ── */
+window.addEventListener('load', async () => {
+  setTimeout(async () => {
+    const splash = document.getElementById('splash');
+    splash.classList.add('fade-out');
+    setTimeout(() => splash.style.display='none', 1000);
+
+    // Check existing session
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      enterApp(session.user);
+    } else {
+      document.getElementById('auth-overlay').classList.add('visible');
+    }
+  }, 3000);
+});
+
+/* ── AUTH TABS ── */
+let currentTab = 'signin';
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-signin').classList.toggle('active', tab==='signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  const fn = document.getElementById('input-firstname');
+  const ln = document.getElementById('input-lastname');
+  fn.style.display = tab==='signup' ? 'block' : 'none';
+  ln.style.display = tab==='signup' ? 'block' : 'none';
+  document.getElementById('flow-btn').textContent = tab==='signup' ? 'JOIN' : 'FLOW';
+  setMsg('','');
+}
+
+function setMsg(text, type) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = text;
+  el.className = 'auth-msg' + (type ? ' '+type : '');
+}
+
+/* ── FORM SUBMIT ── */
+document.getElementById('auth-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const email    = document.getElementById('input-email').value.trim();
+  const password = document.getElementById('input-password').value;
+  const remember = document.getElementById('remember-me').checked;
+  const btn      = document.getElementById('flow-btn');
+
+  btn.disabled = true;
+  setMsg('', '');
+
+  if (currentTab === 'signup') {
+    const firstName = document.getElementById('input-firstname').value.trim();
+    const lastName  = document.getElementById('input-lastname').value.trim();
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { first_name: firstName, last_name: lastName } }
+    });
+    if (error) { setMsg(error.message, 'error'); btn.disabled=false; return; }
+    setMsg('Check your email to confirm your account.', 'success');
+    btn.disabled = false;
+  } else {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { setMsg('Incorrect email or password.', 'error'); btn.disabled=false; return; }
+    if (!remember) {
+      // Sign out when tab closes
+      window.addEventListener('beforeunload', () => sb.auth.signOut());
+    }
+    enterApp(data.user);
+  }
+});
+
+/* ── ENTER APP ── */
+function enterApp(user) {
+  document.getElementById('auth-overlay').classList.remove('visible');
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('main').classList.add('visible');
+  const name = user.user_metadata?.first_name || user.email.split('@')[0];
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('sea-audio').play().catch(()=>{});
+}
+
+/* ── SIGN OUT ── */
+async function signOut() {
+  await sb.auth.signOut();
+  document.getElementById('main').classList.remove('visible');
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  document.getElementById('auth-overlay').classList.add('visible');
+  setMsg('','');
+  switchTab('signin');
+}
+
+/* ── AUDIO ENGINE ── */
+const audio = document.getElementById('player-audio');
+const seaAudio = document.getElementById('sea-audio');
+const fmt = t => `${Math.floor(t/60)}:${(t%60).toString().padStart(2,'0')}`;
+let audioCtx, analyser, source, dataArray, bufferLength;
+let animId, isPlaying=false, spaceActive=false;
+let playHistory=[], pendingTracks=[];
+
+function initCtx() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+  source = audioCtx.createMediaElementSource(audio);
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+}
+
+function drawVis(canvasId, hoopId) {
+  if (!analyser) return;
+  const canvas = document.getElementById(canvasId);
+  const hoopEl = document.getElementById(hoopId);
+  if (!canvas||!hoopEl) return;
+  analyser.getByteFrequencyData(dataArray);
+  const bass=dataArray.slice(0,8).reduce((a,b)=>a+b,0)/8;
+  const mid=dataArray.slice(8,48).reduce((a,b)=>a+b,0)/40;
+  const high=dataArray.slice(48,128).reduce((a,b)=>a+b,0)/80;
+  const avg=(bass+mid+high)/3;
+  const r=Math.min(255,bass*2.5),g=Math.min(255,mid*1.8),b=Math.min(255,high*2.2+80);
+  const col=`rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+  const size=hoopEl.offsetWidth+120;
+  canvas.width=size;canvas.height=size;
+  const ctx=canvas.getContext('2d'),cx=size/2,cy=size/2;
+  ctx.clearRect(0,0,size,size);
+  const radius=hoopEl.offsetWidth/2+10;
+  for(let i=0;i<bufferLength;i++){
+    const angle=(i/bufferLength)*Math.PI*2;
+    const bh=(dataArray[i]/255)*60;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(angle)*radius,cy+Math.sin(angle)*radius);
+    ctx.lineTo(cx+Math.cos(angle)*(radius+bh),cy+Math.sin(angle)*(radius+bh));
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.7+(dataArray[i]/255)*0.3;ctx.stroke();
+  }
+  const grd=ctx.createRadialGradient(cx,cy,radius-5,cx,cy,radius+(avg/255)*30+20);
+  grd.addColorStop(0,`rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},0.3)`);
+  grd.addColorStop(1,`rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},0)`);
+  ctx.beginPath();ctx.arc(cx,cy,radius+(avg/255)*30,0,Math.PI*2);
+  ctx.fillStyle=grd;ctx.globalAlpha=1;ctx.fill();
+  hoopEl.style.borderColor=col;
+  hoopEl.style.boxShadow=`0 0 ${20+avg/4}px rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},0.5)`;
+  const si=document.getElementById('space-i');
+  if(si&&spaceActive){si.style.color=col;si.style.textShadow=`0 0 ${10+avg/6}px ${col}`;}
+}
+
+function animate(){
+  animId=requestAnimationFrame(animate);
+  spaceActive?drawVis('freq-canvas-space','hoop-space'):drawVis('freq-canvas','hoop');
+}
+
+function enterSpace(){
+  spaceActive=true;
+  document.getElementById('space-overlay').classList.add('active');
+  const np=document.getElementById('now-playing');
+  const stn=document.getElementById('space-track-name');
+  if(np&&stn) stn.textContent=np.textContent;
+  seaAudio.pause();
+}
+
+function exitSpace(){
+  spaceActive=false;
+  document.getElementById('space-overlay').classList.remove('active');
+  const h=document.getElementById('hoop');
+  if(h){h.style.borderColor='#fff';h.style.boxShadow='none';}
+  const si=document.getElementById('space-i');
+  if(si){si.style.color='#fff';si.style.textShadow='none';}
+}
+
+function togglePlay(){
+  if(!audio.src) return;
+  initCtx();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  const pb=document.getElementById('play-btn');
+  const pbs=document.getElementById('play-btn-space');
+  if(audio.paused){
+    audio.play();isPlaying=true;
+    if(pb) pb.innerHTML='&#10074;&#10074;';
+    if(pbs) pbs.innerHTML='&#10074;&#10074;';
+    animate();enterSpace();
+  } else {
+    audio.pause();isPlaying=false;
+    if(pb) pb.innerHTML='&#9654;';
+    if(pbs) pbs.innerHTML='&#9654;';
+    cancelAnimationFrame(animId);
+  }
+}
+
+function syncProgress(){
+  const pct=(audio.currentTime/audio.duration)*100||0;
+  const dur=isNaN(audio.duration)?0:Math.floor(audio.duration);
+  const ts=`${fmt(Math.floor(audio.currentTime))} / ${fmt(dur)}`;
+  ['progress-bar','progress-bar-space'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.width=pct+'%';});
+  ['track-time','track-time-space'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ts;});
+}
+
+audio.addEventListener('timeupdate',syncProgress);
+audio.addEventListener('ended',()=>{
+  isPlaying=false;
+  const pb=document.getElementById('play-btn');
+  const pbs=document.getElementById('play-btn-space');
+  if(pb) pb.innerHTML='&#9654;';
+  if(pbs) pbs.innerHTML='&#9654;';
+  cancelAnimationFrame(animId);
+  exitSpace();
+  seaAudio.play().catch(()=>{});
+});
+
+function seekAudio(e,id){
+  const c=document.getElementById(id);
+  if(!c||!audio.duration) return;
+  audio.currentTime=(e.offsetX/c.clientWidth)*audio.duration;
+}
+
+['play-btn','play-btn-space'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('click',togglePlay);
+});
+
+const rw=document.getElementById('rewind');
+const ff=document.getElementById('forward');
+const rws=document.getElementById('rewind-space');
+const ffs=document.getElementById('forward-space');
+const pc=document.getElementById('progress-container');
+const pcs=document.getElementById('progress-container-space');
+const sc=document.getElementById('space-close');
+
+if(rw) rw.addEventListener('click',()=>audio.currentTime=Math.max(0,audio.currentTime-10));
+if(ff) ff.addEventListener('click',()=>audio.currentTime=Math.min(audio.duration||0,audio.currentTime+10));
+if(rws) rws.addEventListener('click',()=>audio.currentTime=Math.max(0,audio.currentTime-10));
+if(ffs) ffs.addEventListener('click',()=>audio.currentTime=Math.min(audio.duration||0,audio.currentTime+10));
+if(pc) pc.addEventListener('click',e=>seekAudio(e,'progress-container'));
+if(pcs) pcs.addEventListener('click',e=>seekAudio(e,'progress-container-space'));
+if(sc) sc.addEventListener('click',()=>{
+  if(!audio.paused){audio.pause();isPlaying=false;cancelAnimationFrame(animId);}
+  exitSpace();
+  seaAudio.play().catch(()=>{});
+  const pb=document.getElementById('play-btn');
+  if(pb) pb.innerHTML='&#9654;';
+});
+
+/* ── UPLOAD ── */
+function loadTrack(file){
+  audio.src=URL.createObjectURL(file);
+  const name=file.name.replace(/\.[^/.]+$/,'');
+  const np=document.getElementById('now-playing');
+  if(np) np.textContent=name;
+  const stn=document.getElementById('space-track-name');
+  if(stn) stn.textContent=name;
+  playHistory.unshift({name,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+}
+
+const au=document.getElementById('adams-upload');
+if(au) au.addEventListener('change',function(){
+  if(this.files[0]){loadTrack(this.files[0]);closeMenuPanel();}
+});
+
+const pu=document.getElementById('playlist-upload');
+if(pu) pu.addEventListener('change',function(){
+  Array.from(this.files).forEach(f=>pendingTracks.push({name:f.name.replace(/\.[^/.]+$/,''),file:f}));
+  renderPending();
+});
+
+function renderPending(){
+  const list=document.getElementById('playlist-tracklist');
+  if(!list) return;
+  list.innerHTML=pendingTracks.map((t,i)=>`<div class="modal-track-item" onclick="playPending(${i})">▶ ${t.name}</div>`).join('');
+}
+
+function playPending(i){
+  if(pendingTracks[i]) loadTrack(pendingTracks[i].file);
+  closeModal('playlist-modal');
+}
+
+function savePlaylist(){
+  const n=document.getElementById('playlist-name-input');
+  if(n&&!n.value.trim()){n.focus();return;}
+  closeModal('playlist-modal');
+}
+
+function openHistory(){
+  const list=document.getElementById('history-list');
+  if(list){
+    list.innerHTML=playHistory.length
+      ?playHistory.map(t=>`<div class="modal-track-item">▶ <span style="flex:1">${t.name}</span><span style="opacity:0.3;font-size:0.65rem">${t.time}</span></div>`).join('')
+      :'<p style="opacity:0.35;font-size:0.75rem;text-align:center;padding:1rem;">No tracks played yet.</p>';
+  }
+  openModal('history-modal');
+}
+
+/* ── MENU ── */
+const menuDot=document.getElementById('menu-dot');
+const menuPanel=document.getElementById('menu-panel');
+const menuBackdrop=document.getElementById('menu-backdrop');
+
+function closeMenuPanel(){
+  if(menuPanel) menuPanel.classList.remove('open');
+  if(menuBackdrop) menuBackdrop.classList.remove('open');
+  closeAllSubmenus();
+}
+
+if(menuDot) menuDot.addEventListener('click',()=>{
+  if(menuPanel) menuPanel.classList.toggle('open');
+  if(menuBackdrop) menuBackdrop.classList.toggle('open');
+});
+if(menuBackdrop) menuBackdrop.addEventListener('click',closeMenuPanel);
+
+function toggleSubmenu(id){
+  const sub=document.getElementById(`sub-${id}`);
+  const arrow=document.getElementById(`arrow-${id}`);
+  const open=sub&&sub.classList.contains('open');
+  closeAllSubmenus();
+  if(!open&&sub){sub.classList.add('open');if(arrow)arrow.style.transform='rotate(90deg)';}
+}
+function closeAllSubmenus(){
+  document.querySelectorAll('.submenu').forEach(s=>s.classList.remove('open'));
+  document.querySelectorAll('.menu-arrow').forEach(a=>a.style.transform='rotate(0deg)');
+}
+
+function openModal(id){const el=document.getElementById(id);if(el)el.classList.add('open');closeMenuPanel();}
+function closeModal(id){const el=document.getElementById(id);if(el)el.classList.remove('open');}
+
+function openCreatePlaylist(ctx){
+  pendingTracks=[];
+  const t=document.getElementById('playlist-modal-title');
+  if(t) t.textContent=ctx==='adams'?"Adam's Apple — Playlist":"Eye of Eve — Playlist";
+  const n=document.getElementById('playlist-name-input');
+  if(n) n.value='';
+  const l=document.getElementById('playlist-tracklist');
+  if(l) l.innerHTML='';
+  openModal('playlist-modal');
+}
+
+function enterDeclutter(){alert('DiHAdeclutter — coming soon.');closeMenuPanel();}
+</script>
+</body>
+</html>
