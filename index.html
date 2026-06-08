@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>DiHAflow — Garden of Flow States</title>
 <link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -30,7 +30,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
   transition:opacity 1s ease;
 }
 #splash.fade-out{opacity:0;pointer-events:none;}
-#splash img{width:min(260px,60vw);object-fit:contain;}
+#splash-video{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+}
 
 /* ── AUTH OVERLAY ── */
 #auth-overlay{
@@ -43,11 +47,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 #auth-overlay.hidden{opacity:0;pointer-events:none;}
 
 .auth-logo{
-  width:120px;height:120px;border-radius:50%;
-  border:2px solid rgba(255,255,255,0.2);
-  background:var(--black);overflow:hidden;position:relative;flex-shrink:0;
+  width:min(200px,55vw);
+  display:flex;justify-content:center;align-items:center;
 }
-.auth-logo img{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:100%;object-fit:cover;}
+.auth-logo img{
+  width:100%;
+  height:auto;
+  object-fit:contain;
+}
 
 /* TABS */
 .auth-tabs{display:flex;gap:0;border:1px solid rgba(255,255,255,0.15);border-radius:30px;overflow:hidden;}
@@ -82,13 +89,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 
 .auth-msg{font-size:0.72rem;text-align:center;min-height:1.1em;letter-spacing:0.08em;}
 .auth-msg.error{color:#ff6b6b;}
-.auth-msg.success{color:#6bffb8;}
+.password-wrap{position:relative;width:100%;}
+.password-wrap input{width:100%;padding-right:2.5rem;}
+.eye-btn{
+  position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;
+  color:rgba(255,255,255,0.4);font-size:1rem;
+  transition:color 0.2s;padding:0;
+}
+.eye-btn:hover{color:var(--white);}
 
 /* ── MAIN ── */
 #main{
-  position:relative;z-index:1;width:100%;height:100vh;
+  position:relative;z-index:1;width:100%;min-height:100vh;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   opacity:0;transition:opacity 0.8s ease;gap:1rem;
+  overflow-y:auto;padding:3.5rem 1rem 2rem;
 }
 #main.visible{opacity:1;}
 
@@ -99,13 +115,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 
 /* USER BADGE */
 .user-badge{
-  position:fixed;top:1rem;right:1rem;z-index:10;
-  display:flex;align-items:center;gap:0.5rem;
-  font-size:0.65rem;letter-spacing:0.1em;opacity:0.5;
+  position:fixed;top:0.8rem;right:0.8rem;z-index:10;
+  display:flex;align-items:center;gap:0.4rem;
+  font-size:0.6rem;letter-spacing:0.08em;opacity:0.5;
   cursor:pointer;transition:opacity 0.2s;
+  background:rgba(0,0,0,0.5);
+  padding:0.3rem 0.6rem;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,0.1);
+  max-width:140px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
 }
 .user-badge:hover{opacity:1;}
-.user-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);}
+.user-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0;}
 
 /* HOOP */
 .hoop-stage{
@@ -119,11 +143,43 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
   border:12px solid var(--white);border-radius:50%;
   display:flex;justify-content:center;align-items:center;
   transition:border-color 0.1s,box-shadow 0.1s;
+  animation:hoop-rotate 8s linear infinite, hoop-colour 6s ease-in-out infinite;
+}
+@keyframes hoop-rotate{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+@keyframes hoop-colour{
+  0%{border-color:#ffffff;box-shadow:0 0 12px rgba(255,255,255,0.15);}
+  25%{border-color:#A8D4FF;box-shadow:0 0 20px rgba(168,212,255,0.3);}
+  50%{border-color:#c8a8ff;box-shadow:0 0 20px rgba(200,168,255,0.3);}
+  75%{border-color:#a8ffe0;box-shadow:0 0 20px rgba(168,255,224,0.3);}
+  100%{border-color:#ffffff;box-shadow:0 0 12px rgba(255,255,255,0.15);}
+}
+.hoop-player.playing{
+  animation:hoop-rotate-fast 3s linear infinite;
+}
+@keyframes hoop-rotate-fast{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
 }
 .inner{
   width:clamp(145px,36vw,195px);height:clamp(145px,36vw,195px);
   border-radius:50%;border:2px solid rgba(255,255,255,0.15);
   display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.3);
+  /* counter-rotate so inner stays stable */
+  animation:counter-rotate 8s linear infinite;
+}
+.hoop-player.playing .inner{
+  animation:counter-rotate-fast 3s linear infinite;
+}
+@keyframes counter-rotate{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(-360deg);}
+}
+@keyframes counter-rotate-fast{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(-360deg);}
 }
 .play-btn{
   width:75px;height:75px;border-radius:50%;
@@ -141,8 +197,51 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 .progress-bar{height:100%;width:0%;background:var(--blue);border-radius:2px;pointer-events:none;transition:width 0.1s linear;}
 .track-time{font-size:0.65rem;opacity:0.35;letter-spacing:0.1em;text-align:right;margin-top:0.4rem;}
 
-/* MENU DOT */
-.menu-dot{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);background:rgba(0,0,0,0.4);display:flex;justify-content:center;align-items:center;cursor:pointer;transition:border-color 0.2s;}
+/* SLIDE CONTAINER */
+.slide-container{
+  width:min(320px,88vw);
+  background:rgba(0,0,0,0.4);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;
+  overflow:hidden;
+  position:relative;
+  min-height:70px;
+}
+.slides-wrap{position:relative;width:100%;}
+.slide{
+  display:none;
+  padding:0.8rem 1rem;
+  flex-direction:column;
+  gap:0.3rem;
+}
+.slide.active{display:flex;}
+.slide-tag{
+  font-size:0.6rem;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--blue);
+  opacity:0.8;
+}
+.slide-text{
+  font-size:0.75rem;
+  line-height:1.5;
+  opacity:0.7;
+  letter-spacing:0.03em;
+}
+.slide-dots{
+  display:flex;
+  justify-content:center;
+  gap:0.4rem;
+  padding:0.5rem 0;
+}
+.slide-dot{
+  width:5px;height:5px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.2);
+  transition:background 0.3s;
+  cursor:pointer;
+}
+.slide-dot.active{background:var(--blue);}width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);background:rgba(0,0,0,0.4);display:flex;justify-content:center;align-items:center;cursor:pointer;transition:border-color 0.2s;}
 .menu-dot:hover{border-color:var(--white);}
 .menu-dot-inner{width:8px;height:8px;border-radius:50%;background:var(--white);}
 
@@ -196,11 +295,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 
 /* RESPONSIVE */
 @media(max-width:480px){
-  .site-header h1{font-size:2.2rem;}
-  .hoop-player{width:220px;height:220px;border-width:9px;}
-  .inner{width:132px;height:132px;}
-  .play-btn{width:64px;height:64px;font-size:1.2rem;}
-  .progress-wrap,.hoop-stage{width:220px;}
+  #main{gap:0.6rem;padding-top:3rem;justify-content:center;}
+  .site-header h1{font-size:1.9rem;}
+  .site-header p{font-size:0.55rem;letter-spacing:0.15em;}
+  .hoop-player{width:200px;height:200px;border-width:8px;}
+  .inner{width:120px;height:120px;}
+  .play-btn{width:58px;height:58px;font-size:1.1rem;}
+  .rw,.ff{font-size:1rem;}
+  .progress-wrap,.hoop-stage{width:200px;}
+  .now-playing{font-size:0.8rem;max-width:220px;}
+  .menu-dot{width:36px;height:36px;}
+  .menu-dot-inner{width:7px;height:7px;}
+  .auth-logo{width:90px;height:90px;}
+  .auth-tab{font-size:0.95rem;padding:0.4rem 1rem;}
+  .flow-btn{font-size:1.1rem;padding:0.5rem 1.4rem;}
+  .auth-form{width:88vw;}
+  .auth-form input{font-size:0.78rem;padding:0.6rem 0.8rem;}
+  .space-title{font-size:1.6rem;top:1.2rem;}
+  .space-close{top:1.2rem;right:1rem;width:30px;height:30px;}
+  .space-progress{bottom:4.5rem;width:85vw;}
+  .space-track-name{bottom:3rem;font-size:0.8rem;}
+  .menu-panel{padding:1rem 1.2rem 2rem;}
+  .menu-item{padding:0.75rem 0;}
+  .menu-title-text{font-size:1rem;}
 }
 @media(min-width:769px){
   .site-header h1{font-size:4rem;}
@@ -222,13 +339,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 
 <!-- SPLASH -->
 <div id="splash">
-  <img src="flow-logo.png" alt="DiHAflow">
+  <video id="splash-video" autoplay muted playsinline>
+    <source src="https://res.cloudinary.com/dfegb8lq5/video/upload/v1780612469/Flow-motion_kmz2mm.mp4" type="video/mp4">
+  </video>
 </div>
 
 <!-- AUTH OVERLAY -->
 <div id="auth-overlay">
   <div class="auth-logo">
-    <img src="flow-logo.png" alt="DiHAflow">
+    <img src="Dihaflow-logo.png" alt="DiHAflow">
   </div>
 
   <div class="auth-tabs">
@@ -240,7 +359,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
     <input type="text" id="input-firstname" placeholder="First Name" style="display:none">
     <input type="text" id="input-lastname" placeholder="Surname" style="display:none">
     <input type="email" id="input-email" placeholder="Email Address" required>
-    <input type="password" id="input-password" placeholder="Password" required minlength="6">
+    <div class="password-wrap">
+      <input type="password" id="input-password" placeholder="Password" required minlength="6">
+      <button type="button" class="eye-btn" id="eye-btn">👁</button>
+    </div>
     <label class="remember-row">
       <input type="checkbox" id="remember-me"> Stay logged in
     </label>
@@ -264,7 +386,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 
   <p class="now-playing" id="now-playing">— select a track —</p>
 
-  <div class="hoop-stage">
+  <!-- SLIDE CONTAINER -->
+  <div class="slide-container">
+    <div class="slides-wrap" id="slides-wrap">
+      <div class="slide active">
+        <span class="slide-tag">What's Blue</span>
+        <p class="slide-text">DiHAdeclutter voting is open — help choose the 19.</p>
+      </div>
+      <div class="slide">
+        <span class="slide-tag">Your River</span>
+        <p class="slide-text">Unsigned Artist of the Week — coming soon.</p>
+      </div>
+      <div class="slide">
+        <span class="slide-tag">My Flow</span>
+        <p class="slide-text">Cold In The Shadow — CaHM behind the scenes dropping soon.</p>
+      </div>
+      <div class="slide">
+        <span class="slide-tag">Garden</span>
+        <p class="slide-text">The garden is growing. More rooms opening soon.</p>
+      </div>
+    </div>
+    <div class="slide-dots" id="slide-dots">
+      <span class="slide-dot active"></span>
+      <span class="slide-dot"></span>
+      <span class="slide-dot"></span>
+      <span class="slide-dot"></span>
+    </div>
+  </div>
     <canvas id="freq-canvas"></canvas>
     <div class="hoop-player" id="hoop">
       <div class="rw" id="rewind">&#9664;&#9664;</div>
@@ -322,30 +470,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
     </div>
   </div>
 
-  <div class="menu-item" onclick="toggleSubmenu('adams')">
+  <div class="menu-item" onclick="toggleSubmenu('myflow')">
     <div class="menu-icon">🍎</div>
     <div>
-      <p class="menu-title-text">Adam's Apple</p>
-      <p class="menu-sub-text">Your music. Your space.</p>
+      <p class="menu-title-text">My Flow</p>
+      <p class="menu-sub-text">Your music. Your world.</p>
     </div>
-    <span class="menu-arrow" id="arrow-adams">›</span>
+    <span class="menu-arrow" id="arrow-myflow">›</span>
   </div>
-  <div class="submenu" id="sub-adams">
+  <div class="submenu" id="sub-myflow">
     <div class="submenu-item" onclick="document.getElementById('adams-upload').click()">○ Upload Track</div>
-    <div class="submenu-item" onclick="openCreatePlaylist('adams')">○ Create Playlist</div>
+    <div class="submenu-item" onclick="openCreatePlaylist('myflow')">○ Create Playlist</div>
     <div class="submenu-item" onclick="openHistory()">○ History</div>
   </div>
 
-  <div class="menu-item" onclick="toggleSubmenu('eve')">
+  <div class="menu-item" onclick="toggleSubmenu('yourriver')">
     <div class="menu-icon">👁</div>
     <div>
-      <p class="menu-title-text">Eye of Eve</p>
-      <p class="menu-sub-text">Space. Shared. Communal.</p>
+      <p class="menu-title-text">Your River</p>
+      <p class="menu-sub-text">Playlists. Artists. Community.</p>
     </div>
-    <span class="menu-arrow" id="arrow-eve">›</span>
+    <span class="menu-arrow" id="arrow-yourriver">›</span>
   </div>
-  <div class="submenu" id="sub-eve">
-    <div class="submenu-item" onclick="openCreatePlaylist('eve')">○ Create Playlist</div>
+  <div class="submenu" id="sub-yourriver">
+    <div class="submenu-item" onclick="openCreatePlaylist('yourriver')">○ Create Playlist</div>
     <div class="submenu-item" onclick="openHistory()">○ History Playlist</div>
   </div>
 
@@ -401,19 +549,27 @@ const sb = createClient(
 
 /* ── SPLASH → AUTH ── */
 window.addEventListener('load', async () => {
-  setTimeout(async () => {
-    const splash = document.getElementById('splash');
+  const splash = document.getElementById('splash');
+  const splashVideo = document.getElementById('splash-video');
+
+  const fadeSplash = async () => {
     splash.classList.add('fade-out');
     setTimeout(() => splash.style.display='none', 1000);
-
-    // Check existing session
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       enterApp(session.user);
     } else {
       document.getElementById('auth-overlay').classList.add('visible');
     }
-  }, 3000);
+  };
+
+  // Fade when video ends or after 6s max
+  if (splashVideo) {
+    splashVideo.addEventListener('ended', fadeSplash);
+    setTimeout(fadeSplash, 6000);
+  } else {
+    setTimeout(fadeSplash, 3000);
+  }
 });
 
 /* ── AUTH TABS ── */
@@ -435,6 +591,15 @@ function setMsg(text, type) {
   el.textContent = text;
   el.className = 'auth-msg' + (type ? ' '+type : '');
 }
+
+/* ── PASSWORD TOGGLE ── */
+const eyeBtn = document.getElementById('eye-btn');
+const pwInput = document.getElementById('input-password');
+if(eyeBtn && pwInput) eyeBtn.addEventListener('click', () => {
+  const show = pwInput.type === 'password';
+  pwInput.type = show ? 'text' : 'password';
+  eyeBtn.textContent = show ? '🙈' : '👁';
+});
 
 /* ── FORM SUBMIT ── */
 document.getElementById('auth-form').addEventListener('submit', async function(e) {
@@ -573,15 +738,18 @@ function togglePlay(){
   if(audioCtx.state==='suspended') audioCtx.resume();
   const pb=document.getElementById('play-btn');
   const pbs=document.getElementById('play-btn-space');
+  const hoop=document.getElementById('hoop');
   if(audio.paused){
     audio.play();isPlaying=true;
     if(pb) pb.innerHTML='&#10074;&#10074;';
     if(pbs) pbs.innerHTML='&#10074;&#10074;';
+    if(hoop) hoop.classList.add('playing');
     animate();enterSpace();
   } else {
     audio.pause();isPlaying=false;
     if(pb) pb.innerHTML='&#9654;';
     if(pbs) pbs.innerHTML='&#9654;';
+    if(hoop) hoop.classList.remove('playing');
     cancelAnimationFrame(animId);
   }
 }
@@ -723,7 +891,7 @@ function closeModal(id){const el=document.getElementById(id);if(el)el.classList.
 function openCreatePlaylist(ctx){
   pendingTracks=[];
   const t=document.getElementById('playlist-modal-title');
-  if(t) t.textContent=ctx==='adams'?"Adam's Apple — Playlist":"Eye of Eve — Playlist";
+  if(t) t.textContent=ctx==='adams'?"My Flow — Playlist":"Your River — Playlist";
   const n=document.getElementById('playlist-name-input');
   if(n) n.value='';
   const l=document.getElementById('playlist-tracklist');
@@ -732,6 +900,21 @@ function openCreatePlaylist(ctx){
 }
 
 function enterDeclutter(){alert('DiHAdeclutter — coming soon.');closeMenuPanel();}
+
+/* ── SLIDE CONTAINER ── */
+const slides=document.querySelectorAll('.slide');
+const dots=document.querySelectorAll('.slide-dot');
+let currentSlide=0;
+function goToSlide(n){
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  currentSlide=(n+slides.length)%slides.length;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+}
+dots.forEach((dot,i)=>dot.addEventListener('click',()=>goToSlide(i)));
+setInterval(()=>goToSlide(currentSlide+1),4000);
 </script>
 </body>
 </html>
+
