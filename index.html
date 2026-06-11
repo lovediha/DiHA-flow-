@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>DiHAflow — Garden of Flow States</title>
+<title>DiHAflow — A sonic movement.  A healing room</title>
 <link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -245,7 +245,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 
 /* MENU DOT */
 .menu-dot{
-  position:fixed;bottom:1.5rem;left:50%;
+  position:fixed;bottom:2.5rem;left:50%;
   transform:translateX(-50%);z-index:40;
   width:40px;height:40px;border-radius:50%;
   border:2px solid rgba(255,255,255,0.4);
@@ -304,38 +304,90 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:v
 .modal-track-item:hover{background:rgba(255,255,255,0.08);}
 .modal-save-btn{padding:0.6rem;background:var(--blue-dim);border:1.5px solid var(--blue);border-radius:30px;color:var(--white);font-family:var(--font-vt);font-size:1.05rem;letter-spacing:0.15em;cursor:pointer;}
 
-/* RESPONSIVE */
+/* ═══════════════════════════
+   MOBILE — up to 480px
+═══════════════════════════ */
 @media(max-width:480px){
-  #main{gap:0.6rem;padding-top:3rem;justify-content:center;}
-  .site-header h1{font-size:1.9rem;}
-  .site-header p{font-size:0.55rem;letter-spacing:0.15em;}
-  .hoop-player{width:200px;height:200px;border-width:8px;}
-  .inner{width:120px;height:120px;}
-  .play-btn{width:58px;height:58px;font-size:1.1rem;}
-  .rw,.ff{font-size:1rem;}
-  .progress-wrap,.hoop-stage{width:200px;}
-  .now-playing{font-size:0.8rem;max-width:220px;}
-  .menu-dot{width:36px;height:36px;}
-  .menu-dot-inner{width:7px;height:7px;}
-  .auth-logo{width:90px;height:90px;}
-  .auth-tab{font-size:0.95rem;padding:0.4rem 1rem;}
-  .flow-btn{font-size:1.1rem;padding:0.5rem 1.4rem;}
-  .auth-form{width:88vw;}
-  .auth-form input{font-size:0.78rem;padding:0.6rem 0.8rem;}
-  .space-title{font-size:1.6rem;top:1.2rem;}
-  .space-close{top:1.2rem;right:1rem;width:30px;height:30px;}
-  .space-progress{bottom:4.5rem;width:85vw;}
-  .space-track-name{bottom:3rem;font-size:0.8rem;}
-  .menu-panel{padding:1rem 1.2rem 2rem;}
-  .menu-item{padding:0.75rem 0;}
-  .menu-title-text{font-size:1rem;}
+  #main{gap:0.5rem;padding:3rem 1rem 5rem;}
+  .site-header h1{font-size:1.8rem;}
+  .site-header p{font-size:0.5rem;letter-spacing:0.12em;}
+  .now-playing{font-size:0.75rem;max-width:200px;}
+  .slide-container{width:92vw;}
+  .slide-text{font-size:0.68rem;}
+  .hoop-stage{width:190px;height:190px;}
+  .hoop-player{width:180px;height:180px;border-width:7px;}
+  .inner{width:108px;height:108px;}
+  .play-btn{width:52px;height:52px;font-size:1rem;}
+  .rw,.ff{font-size:0.9rem;}
+  .progress-wrap{width:180px;}
+  .track-time{font-size:0.6rem;}
+  .menu-dot{width:34px;height:34px;bottom:2rem;}
+  .menu-dot-inner{width:6px;height:6px;}
+  .menu-panel{padding:1rem 1rem 2rem;}
+  .menu-item{padding:0.7rem 0;}
+  .menu-title-text{font-size:0.95rem;}
+  .menu-sub-text{font-size:0.55rem;}
+  .auth-logo{width:min(160px,50vw);}
+  .auth-tabs{margin-top:0.5rem;}
+  .auth-tab{font-size:0.9rem;padding:0.35rem 0.9rem;}
+  .flow-btn{font-size:1rem;padding:0.5rem 1.2rem;}
+  .auth-form{width:90vw;}
+  .auth-form input{font-size:0.75rem;padding:0.55rem 0.75rem;}
+  .space-title{font-size:1.5rem;top:1rem;}
+  .space-close{top:1rem;right:0.8rem;width:28px;height:28px;}
+  .space-progress{bottom:4rem;width:88vw;}
+  .space-track-name{bottom:2.5rem;font-size:0.75rem;}
+  .modal-box{padding:1.2rem 1rem;}
+  .modal-title{font-size:1.1rem;}
 }
+
+/* ═══════════════════════════
+   TABLET — 481px to 768px
+═══════════════════════════ */
+@media(min-width:481px) and (max-width:768px){
+  #main{gap:0.8rem;padding:3.5rem 1rem 5rem;}
+  .site-header h1{font-size:2.6rem;}
+  .site-header p{font-size:0.65rem;}
+  .slide-container{width:80vw;}
+  .hoop-stage{width:280px;height:280px;}
+  .hoop-player{width:260px;height:260px;border-width:10px;}
+  .inner{width:158px;height:158px;}
+  .play-btn{width:70px;height:70px;font-size:1.3rem;}
+  .rw,.ff{font-size:1.2rem;}
+  .progress-wrap{width:260px;}
+  .menu-dot{width:38px;height:38px;bottom:2.2rem;}
+  .auth-logo{width:min(200px,50vw);}
+  .auth-form{width:75vw;}
+  .space-title{font-size:2rem;}
+  .space-progress{width:75vw;}
+}
+
+/* ═══════════════════════════
+   DESKTOP — 769px and above
+═══════════════════════════ */
 @media(min-width:769px){
+  #main{gap:1.2rem;padding:4rem 2rem 5rem;}
   .site-header h1{font-size:4rem;}
-  .hoop-player{width:340px;height:340px;}
+  .site-header p{font-size:0.85rem;letter-spacing:0.25em;}
+  .slide-container{width:500px;}
+  .slide-text{font-size:0.85rem;}
+  .hoop-stage{width:360px;height:360px;}
+  .hoop-player{width:340px;height:340px;border-width:14px;}
   .inner{width:210px;height:210px;}
-  .play-btn{width:88px;height:88px;font-size:1.7rem;}
-  .progress-wrap,.hoop-stage{width:340px;}
+  .play-btn{width:88px;height:88px;font-size:1.8rem;}
+  .rw,.ff{font-size:1.6rem;}
+  .progress-wrap{width:340px;}
+  .menu-dot{width:44px;height:44px;bottom:2.5rem;}
+  .menu-dot-inner{width:9px;height:9px;}
+  .auth-logo{width:240px;}
+  .auth-form{width:360px;}
+  .auth-form input{font-size:0.88rem;padding:0.75rem 1rem;}
+  .flow-btn{font-size:1.4rem;padding:0.65rem 2rem;}
+  .space-title{font-size:2.8rem;}
+  .space-progress{width:400px;}
+  .menu-panel{max-width:480px;left:50%;transform:translateX(-50%) translateY(100%);}
+  .menu-panel.open{transform:translateX(-50%) translateY(0);}
+  .modal-box{width:400px;}
 }
 </style>
 </head>
@@ -667,6 +719,7 @@ async function signOut() {
 /* ── AUDIO ENGINE ── */
 const audio = document.getElementById('player-audio');
 const seaAudio = document.getElementById('sea-audio');
+seaAudio.volume = 0.08;
 const fmt = t => `${Math.floor(t/60)}:${(t%60).toString().padStart(2,'0')}`;
 let audioCtx, analyser, source, dataArray, bufferLength;
 let animId, isPlaying=false, spaceActive=false;
@@ -725,6 +778,17 @@ function animate(){
   spaceActive?drawVis('freq-canvas-space','hoop-space'):drawVis('freq-canvas','hoop');
 }
 
+function clearCanvas() {
+  ['freq-canvas','freq-canvas-space'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) c.getContext('2d').clearRect(0,0,c.width,c.height);
+  });
+  const h = document.getElementById('hoop');
+  const hs = document.getElementById('hoop-space');
+  if(h){h.style.borderColor='';h.style.boxShadow='';}
+  if(hs){hs.style.borderColor='';hs.style.boxShadow='';}
+}
+
 function enterSpace(){
   spaceActive=true;
   document.getElementById('space-overlay').classList.add('active');
@@ -762,6 +826,7 @@ function togglePlay(){
     if(pbs) pbs.innerHTML='&#9654;';
     if(hoop) hoop.classList.remove('playing');
     cancelAnimationFrame(animId);
+    clearCanvas();
   }
 }
 
@@ -780,7 +845,10 @@ audio.addEventListener('ended',()=>{
   const pbs=document.getElementById('play-btn-space');
   if(pb) pb.innerHTML='&#9654;';
   if(pbs) pbs.innerHTML='&#9654;';
+  const h=document.getElementById('hoop');
+  if(h) h.classList.remove('playing');
   cancelAnimationFrame(animId);
+  clearCanvas();
   exitSpace();
   seaAudio.play().catch(()=>{});
 });
